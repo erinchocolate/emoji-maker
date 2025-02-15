@@ -1,15 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EmojiForm } from '@/components/emoji-form';
 import { EmojiGrid } from '@/components/emoji-grid';
 import { toast } from 'sonner';
+import { useUser } from '@clerk/nextjs';
+import { createOrGetUserProfile } from '@/lib/user-profile';
 
 export default function Home() {
+  const { user, isLoaded } = useUser();
   const [emojis, setEmojis] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  useEffect(() => {
+    if (isLoaded && user) {
+      // Initialize user profile when user signs in
+      createOrGetUserProfile(user.id).catch(console.error);
+    }
+  }, [isLoaded, user]);
+
   const handleGenerate = async (prompt: string) => {
+    if (!user) {
+      toast.error('Please sign in to generate emojis');
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       const response = await fetch('/api/generate', {
